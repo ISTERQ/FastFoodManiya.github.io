@@ -8,7 +8,7 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = 'mongodb://sosaldbmoy_memberdeal:cf007c3511b5f6c64e2451ee67bfd0b4804acb52@fyghg.h.filess.io:61004/sosaldbmoy_memberdeal';
-const JWT_SECRET = 'Очень_секретный_ключ_замени_на_случайный_стринг';
+const JWT_SECRET = 'b3f59c77c06c2d4b6c0d81514f4e4fd7dc17d0f143e8f0bddc4f9306edb969e6';
 
 // Middleware
 app.use(cors({
