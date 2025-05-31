@@ -42,7 +42,6 @@ function initializeEventListeners() {
   document.getElementById('checkoutButton').addEventListener('click', handleCheckout);
   document.getElementById('finalOrderForm').addEventListener('submit', handleOrderSubmission);
 
-  // Switch forms links
   document.getElementById('showLoginForm').addEventListener('click', e => {
     e.preventDefault();
     toggleAuthForms('login');
@@ -182,7 +181,7 @@ async function loadProfile() {
       <div id="ordersList">Загрузка заказов...</div>
     `;
 
-    loadOrders();
+    await loadOrders();
 
   } catch (err) {
     console.error(err);
@@ -215,7 +214,7 @@ async function loadOrders() {
       const date = new Date(order.createdAt).toLocaleString();
       const itemsList = order.items.map(i => `<li>${i.name} × ${i.quantity} (${i.price * i.quantity} ₽)</li>`).join('');
       return `
-        <div class="order-item">
+        <div class="order-item" style="border:1px solid #ddd; padding:10px; margin-bottom:10px;">
           <p><strong>Дата:</strong> ${date}</p>
           <ul>${itemsList}</ul>
           <p><strong>Итого:</strong> ${order.total} ₽</p>
@@ -238,7 +237,7 @@ function handleLogout() {
   location.reload();
 }
 
-// Cart functionality (упрощённо)
+// Cart management
 function addToCart(item) {
   if (cartData[item.id]) {
     cartData[item.id].quantity += item.quantity;
@@ -332,6 +331,7 @@ async function handleOrderSubmission(e) {
       clearCart();
       closeModal(elements.orderConfirmModal);
       closeSidebar(elements.cartSidebar);
+      await loadOrders(); // обновляем историю заказов
     } else {
       alert('Ошибка при оформлении заказа: ' + data.message);
     }
