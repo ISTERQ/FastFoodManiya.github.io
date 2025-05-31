@@ -487,52 +487,27 @@ function showOrderForm() {
   openModal(elements.orderConfirmModal);
 }
 
-function showNotification(message, type = 'success') {
-  const notification = document.createElement('div');
-  notification.className = `notification notification-${type}`;
-  notification.textContent = message;
+function repeatOrder(orderIndex) {
+  const userId = localStorage.getItem('userId');
+  const orders = JSON.parse(localStorage.getItem(`orders_${userId}`) || '[]');
 
-  document.body.appendChild(notification);
+  if (orderIndex >= 0 && orderIndex < orders.length) {
+    const order = orders[orderIndex];
 
-  setTimeout(() => {
-    notification.remove();
-  }, 3000);
-}
+    // Добавляем все товары из заказа в корзину
+    order.items.forEach(item => {
+      addToCart({
+        id: item.id || `repeat_${Date.now()}_${Math.random()}`,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity
+      });
+    });
 
-function openModal(modal) {
-  if (modal && elements.overlay) {
-    modal.style.display = 'block';
-    elements.overlay.style.display = 'block';
-    document.body.style.overflow = 'hidden';
+    showNotification(`Заказ повторен! Добавлено ${order.items.length} товаров в корзину.`);
+
+    // Закрываем профиль и открываем корзину
+    closeSidebar(elements.profileSidebar);
+    openSidebar(elements.cartSidebar);
   }
 }
-
-function closeModal(modal) {
-  if (modal && elements.overlay) {
-    modal.style.display = 'none';
-    elements.overlay.style.display = 'none';
-    document.body.style.overflow = '';
-  }
-}
-
-function openSidebar(sidebar) {
-  const token = localStorage.getItem('accessToken');
-  if (!token) {
-    openModal(elements.loginModal);
-    return;
-  }
-  if (!sidebar) return;
-
-  closeModal(elements.loginModal);
-  closeModal(elements.orderConfirmModal);
-  elements.overlay.style.display = 'none';
-
-  sidebar.classList.add('open');
-}
-
-function closeSidebar(sidebar) {
-  if (!sidebar) return;
-  sidebar.classList.remove('open');
-  document.body.style.overflow = '';
-}
-
