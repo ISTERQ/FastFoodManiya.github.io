@@ -33,7 +33,7 @@ function initializeElements() {
   elements.itemCountElement = document.getElementById('itemCount');
   elements.profileContent = document.getElementById('profileContent');
 
-  // Закрытие всех окон по клику на оверлей
+  // Close all modals and sidebars on overlay click
   elements.overlay.addEventListener('click', () => {
     closeModal(elements.loginModal);
     closeModal(elements.orderConfirmModal);
@@ -59,6 +59,12 @@ function initializeEventListeners() {
     e.preventDefault();
     toggleAuthForms('register');
   });
+
+  // Example buttons for opening sidebars:
+  const cartBtn = document.getElementById('cartButton');
+  if (cartBtn) cartBtn.addEventListener('click', () => openSidebar(elements.cartSidebar));
+  const profileBtn = document.getElementById('profileButton');
+  if (profileBtn) profileBtn.addEventListener('click', () => openSidebar(elements.profileSidebar));
 }
 
 function toggleAuthForms(form) {
@@ -154,10 +160,7 @@ function updateLoginButtonToProfile() {
 
   loginButton.id = 'profileButton';
 
-  loginButton.onclick = () => {
-    openSidebar(elements.profileSidebar);
-    loadProfile();
-  };
+  loginButton.onclick = () => openSidebar(elements.profileSidebar);
 }
 
 function checkUserAuth() {
@@ -290,7 +293,6 @@ function clearCart() {
 function handleCheckout() {
   const token = localStorage.getItem('accessToken');
   if (!token) {
-    alert('Пожалуйста, войдите в аккаунт для оформления заказа');
     openModal(elements.loginModal);
     return;
   }
@@ -340,7 +342,7 @@ async function handleOrderSubmission(e) {
       clearCart();
       closeModal(elements.orderConfirmModal);
       closeSidebar(elements.cartSidebar);
-      await loadOrders(); // обновляем историю заказов
+      await loadOrders();
     } else {
       alert('Ошибка при оформлении заказа: ' + data.message);
     }
@@ -360,7 +362,6 @@ function openModal(modal) {
 function closeModal(modal) {
   if (!modal) return;
   modal.style.display = 'none';
-  // Скрываем overlay, только если нет открытых модалок
   if (
     (!elements.loginModal || elements.loginModal.style.display === 'none') &&
     (!elements.orderConfirmModal || elements.orderConfirmModal.style.display === 'none')
@@ -370,9 +371,18 @@ function closeModal(modal) {
 }
 
 function openSidebar(sidebar) {
+  const token = localStorage.getItem('accessToken');
+  if (!token) {
+    openModal(elements.loginModal);
+    return;
+  }
   if (!sidebar) return;
+
+  closeModal(elements.loginModal);
+  closeModal(elements.orderConfirmModal);
+  elements.overlay.style.display = 'none';
+
   sidebar.classList.add('open');
-  // При открытии сайдбара overlay НЕ показываем (чтобы не блокировал клики)
 }
 
 function closeSidebar(sidebar) {
