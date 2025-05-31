@@ -1,15 +1,13 @@
 const express = require('express');
-const path = require('path');
 const cors = require('cors');
-const { MongoClient, ObjectId } = require('mongodb');
+const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
 const MONGO_URI = 'mongodb://sosaldbmoy_memberdeal:cf007c3511b5f6c64e2451ee67bfd0b4804acb52@fyghg.h.filess.io:61004/sosaldbmoy_memberdeal';
-
 const JWT_SECRET = 'Очень_секретный_ключ_замени_на_случайный_стринг';
 
 // Middleware
@@ -20,41 +18,66 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static('.'));
 
-// Подключение к MongoDB
-let db;
-MongoClient.connect(MONGO_URI)
-  .then(client => {
-    db = client.db();
-    console.log('Connected to MongoDB');
-
+// Подключение к MongoDB через Mongoose
+mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log('Mongoose подключен к MongoDB');
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running on port ${PORT}`);
+      console.log(`Сервер запущен на порту ${PORT}`);
     });
   })
   .catch(err => {
-    console.error('MongoDB connection error:', err);
+    console.error('Ошибка подключения к MongoDB', err);
   });
+
+// Схема и модель пользователя
+const userSchema = new mongoose.Schema({
+  username: { type: String, required: true, minlength: 2 },
+  email: { type: String, required: true, unique: true, lowercase: true },
+  password: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const User = mongoose.model('User', userSchema);
+
+// Схема и модель заказа
+const orderSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  items: [{
+    id: String,
+    name: String,
+    price: Number,
+    quantity: Number
+  }],
+  total: { type: Number, required: true },
+  phone: { type: String, required: true },
+  address: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  status: { type: String, default: 'pending' }
+});
+
+const Order = mongoose.model('Order', orderSchema);
 
 // Регистрация
 app.post('/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
+
     if (!username || !email || !password)
       return res.status(400).json({ message: 'Все поля обязательны' });
 
-    const usersCollection = db.collection('users');
-    const existingUser = await usersCollection.findOne({ email });
-    if (existingUser) {
+    const existingUser = await User.findOne({ email });
+    if (existingUser)
       return res.status(400).json({ message: 'Пользователь с таким email уже существует' });
-    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = { username, email, password: hashedPassword, createdAt: new Date() };
-    const result = await usersCollection.insertOne(newUser);
 
-    res.status(201).json({ message: 'Регистрация успешна', userId: result.insertedId });
+    const newUser = new User({ username, email, password: hashedPassword });
+    await newUser.save();
+
+    res.status(201).json({ message: 'Регистрация успешна', userId: newUser._id });
   } catch (err) {
-    console.error('Register error:', err);
+    console.error('Ошибка регистрации:', err);
     res.status(500).json({ message: 'Ошибка сервера при регистрации' });
   }
 });
@@ -63,30 +86,28 @@ app.post('/register', async (req, res) => {
 app.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+
     if (!email || !password)
       return res.status(400).json({ message: 'Email и пароль обязательны' });
 
-    const usersCollection = db.collection('users');
-    const user = await usersCollection.findOne({ email });
-    if (!user) return res.status(401).json({ message: 'Неверный email или пароль' });
+    const user = await User.findOne({ email });
+    if (!user)
+      return res.status(401).json({ message: 'Неверный email или пароль' });
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) return res.status(401).json({ message: 'Неверный email или пароль' });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch)
+      return res.status(401).json({ message: 'Неверный email или пароль' });
 
-    const accessToken = jwt.sign(
-      { userId: user._id, username: user.username, email: user.email },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    const token = jwt.sign({ userId: user._id, username: user.username }, JWT_SECRET, { expiresIn: '24h' });
 
-    res.json({ message: 'Вход успешен', accessToken, userId: user._id, username: user.username });
+    res.json({ message: 'Вход успешен', accessToken: token, userId: user._id, username: user.username });
   } catch (err) {
-    console.error('Login error:', err);
+    console.error('Ошибка входа:', err);
     res.status(500).json({ message: 'Ошибка сервера при входе' });
   }
 });
 
-// Middleware авторизации по JWT
+// Middleware аутентификации
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   if (!authHeader) return res.status(401).json({ message: 'Токен не предоставлен' });
@@ -101,61 +122,52 @@ function authenticateToken(req, res, next) {
   });
 }
 
-// Создание заказа (только для авторизованных)
+// Создание заказа (защищённый маршрут)
 app.post('/api/orders', authenticateToken, async (req, res) => {
   try {
     const { items, total, phone, address } = req.body;
-    if (!items || !total || !phone || !address) {
-      return res.status(400).json({ message: 'Неверные данные заказа' });
-    }
 
-    const ordersCollection = db.collection('orders');
-    const newOrder = {
-      userId: new ObjectId(req.user.userId),
+    if (!items || !total || !phone || !address)
+      return res.status(400).json({ message: 'Неверные данные заказа' });
+
+    const order = new Order({
+      userId: req.user.userId,
       items,
       total,
       phone,
-      address,
-      createdAt: new Date(),
-      status: 'pending'
-    };
+      address
+    });
 
-    const result = await ordersCollection.insertOne(newOrder);
-    res.status(201).json({ message: 'Заказ успешно создан', orderId: result.insertedId });
+    await order.save();
 
-    console.log(`Новый заказ #${result.insertedId} от пользователя ${req.user.userId}`);
+    res.status(201).json({ message: 'Заказ успешно создан', orderId: order._id });
   } catch (err) {
-    console.error('Order creation error:', err);
+    console.error('Ошибка создания заказа:', err);
     res.status(500).json({ message: 'Ошибка сервера при создании заказа' });
   }
 });
 
-// Получение заказов пользователя (только для авторизованных)
+// Получение заказов пользователя (защищённый маршрут)
 app.get('/api/orders', authenticateToken, async (req, res) => {
   try {
-    const ordersCollection = db.collection('orders');
-    const userOrders = await ordersCollection.find({ userId: new ObjectId(req.user.userId) }).toArray();
-    res.json(userOrders);
+    const orders = await Order.find({ userId: req.user.userId }).sort({ createdAt: -1 });
+    res.json(orders);
   } catch (err) {
-    console.error('Get orders error:', err);
+    console.error('Ошибка получения заказов:', err);
     res.status(500).json({ message: 'Ошибка сервера при получении заказов' });
   }
 });
 
-// Получение данных пользователя
+// Получение информации о пользователе (защищённый маршрут)
 app.get('/api/user', authenticateToken, async (req, res) => {
   try {
-    const usersCollection = db.collection('users');
-    const user = await usersCollection.findOne(
-      { _id: new ObjectId(req.user.userId) },
-      { projection: { password: 0 } }
-    );
-
+    const user = await User.findById(req.user.userId).select('-password');
     if (!user) return res.status(404).json({ message: 'Пользователь не найден' });
+
     res.json(user);
   } catch (err) {
-    console.error('Get user error:', err);
-    res.status(500).json({ message: 'Ошибка сервера при получении данных пользователя' });
+    console.error('Ошибка получения пользователя:', err);
+    res.status(500).json({ message: 'Ошибка сервера при получении пользователя' });
   }
 });
 
