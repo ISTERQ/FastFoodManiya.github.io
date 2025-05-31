@@ -32,6 +32,15 @@ function initializeElements() {
   elements.totalPrice = document.getElementById('totalPrice');
   elements.itemCountElement = document.getElementById('itemCount');
   elements.profileContent = document.getElementById('profileContent');
+
+  // Закрытие всех окон по клику на оверлей
+  elements.overlay.addEventListener('click', () => {
+    closeModal(elements.loginModal);
+    closeModal(elements.orderConfirmModal);
+    closeSidebar(elements.cartSidebar);
+    closeSidebar(elements.profileSidebar);
+    elements.overlay.style.display = 'none';
+  });
 }
 
 function initializeEventListeners() {
@@ -351,12 +360,19 @@ function openModal(modal) {
 function closeModal(modal) {
   if (!modal) return;
   modal.style.display = 'none';
-  elements.overlay.style.display = 'none';
+  // Скрываем overlay, только если нет открытых модалок
+  if (
+    (!elements.loginModal || elements.loginModal.style.display === 'none') &&
+    (!elements.orderConfirmModal || elements.orderConfirmModal.style.display === 'none')
+  ) {
+    elements.overlay.style.display = 'none';
+  }
 }
 
 function openSidebar(sidebar) {
   if (!sidebar) return;
   sidebar.classList.add('open');
+  // При открытии сайдбара overlay НЕ показываем (чтобы не блокировал клики)
 }
 
 function closeSidebar(sidebar) {
