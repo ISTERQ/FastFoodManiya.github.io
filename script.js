@@ -1,4 +1,3 @@
-
 // Global variables
 let cartData = {};
 let itemCount = 0;
@@ -40,6 +39,15 @@ function initializeElements() {
   elements.totalPrice = document.getElementById('totalPrice');
   elements.itemCountElement = document.getElementById('itemCount');
   elements.profileContent = document.getElementById('profileContent');
+
+  // Оверлей закрывает все модалки и сайдбары
+  elements.overlay.addEventListener('click', () => {
+    closeModal(elements.loginModal);
+    closeModal(elements.foodModal);
+    closeModal(elements.orderConfirmModal);
+    closeSidebar(elements.cartSidebar);
+    closeSidebar(elements.profileSidebar);
+  });
 }
 
 // Initialize event listeners
@@ -544,282 +552,14 @@ function displayOrders(orders) {
     return;
   }
 
-  const ordersHTML = orders.map(order => {
+  const ordersHTML = orders.map((order, index) => {
     const date = new Date(order.date || order.createdAt).toLocaleString();
     const itemsList = order.items.map(item =>
       `<li>${item.name} × ${item.quantity} (${item.price * item.quantity} ₽)</li>`
     ).join('');
 
     return `
-      <div class="order-item">
+      <div class="order-item" style="border:1px solid #ddd; padding:10px; margin-bottom:10px;">
         <p><strong>Дата:</strong> ${date}</p>
         <ul>${itemsList}</ul>
-        <p><strong>Итого:</strong> ${order.total} ₽</p>
-      </div>
-    `;
-  }).join('');
-
-  profileContent.innerHTML = `
-    <div style="text-align: center; margin-bottom: 20px;">
-      <h3>Добро пожаловать, ${username}!</h3>
-    </div>
-    <h3>История заказов:</h3>
-    ${ordersHTML}
-  `;
-}
-
-async function handleLogout() {
-  const userId = localStorage.getItem('userId');
-
-  try {
-    await fetch('https://fastfoodmania-api.onrender.com/logout', {
-      method: 'POST',
-      credentials: 'include'
-    });
-  } catch (error) {
-    console.error('Logout error:', error);
-  }
-
-  // Очищаем только данные авторизации, оставляем зарегистрированных пользователей и их заказы
-  localStorage.removeItem('userId');
-  localStorage.removeItem('username');
-  localStorage.removeItem('userDisplayName');
-  localStorage.removeItem('accessToken');
-
-  clearCart();
-  closeSidebar(elements.profileSidebar);
-
-  // Восстанавливаем кнопку входа
-  const profileButton = document.getElementById('profileButton');
-  if (profileButton) {
-    profileButton.innerHTML = `
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-        <circle cx="12" cy="7" r="4"></circle>
-      </svg>
-      Войти
-    `;
-    profileButton.id = 'loginButton';
-
-    // Remove old listeners and add new one
-    const newButton = profileButton.cloneNode(true);
-    profileButton.parentNode.replaceChild(newButton, profileButton);
-
-    newButton.addEventListener('click', () => openModal(elements.loginModal));
-  }
-}
-
-async function handleOrderSubmission(e) {
-  e.preventDefault();
-
-  const userId = localStorage.getItem('userId');
-  const phone = document.getElementById('phone').value;
-  const address = document.getElementById('address').value;
-
-  const items = Object.values(cartData).map(item => ({
-    id: item.id,
-    name: item.name,
-    price: item.price,
-    quantity: item.quantity
-  }));
-
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
-  // Сохраняем заказ локально
-  const orders = JSON.parse(localStorage.getItem(`orders_${userId}`) || '[]');
-  orders.push({
-    date: new Date().toISOString(),
-    items,
-    total,
-    phone,
-    address
-  });
-  localStorage.setItem(`orders_${userId}`, JSON.stringify(orders));
-
-  try {
-    const response = await fetch('https://fastfoodmania-api.onrender.com/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, items, total, phone, address })
-    });
-
-    if (response.ok) {
-      showNotification('Заказ успешно оформлен! Данные отправлены на почту.');
-    } else {
-      showNotification('Заказ сохранен локально. Данные отправлены на почту.');
-    }
-  } catch (error) {
-    console.error('Order submission error:', error);
-    showNotification('Заказ сохранен локально. Данные отправлены на почту.');
-  }
-
-  clearCart();
-  closeModal(elements.orderConfirmModal);
-}
-
-// Modal system
-function initializeModals() {
-  // Close modals
-  document.querySelectorAll('.modal-close').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const modal = e.target.closest('.modal');
-      closeModal(modal);
-    });
-  });
-
-  // Close sidebars
-  document.querySelectorAll('.sidebar-close').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const sidebar = e.target.closest('.sidebar');
-      closeSidebar(sidebar);
-    });
-  });
-
-  // Close on overlay click
-  if (elements.overlay) {
-    elements.overlay.addEventListener('click', () => {
-      closeAllModals();
-    });
-  }
-}
-
-function openModal(modal) {
-  if (modal && elements.overlay) {
-    modal.style.display = 'block';
-    elements.overlay.style.display = 'block';
-    document.body.style.overflow = 'hidden';
-  }
-}
-
-function closeModal(modal) {
-  if (modal && elements.overlay) {
-    modal.style.display = 'none';
-    elements.overlay.style.display = 'none';
-    document.body.style.overflow = '';
-  }
-}
-
-function closeAllModals() {
-  document.querySelectorAll('.modal').forEach(modal => {
-    modal.style.display = 'none';
-  });
-  if (elements.overlay) {
-    elements.overlay.style.display = 'none';
-  }
-  document.body.style.overflow = '';
-}
-
-function openSidebar(sidebar) {
-  if (sidebar) {
-    sidebar.classList.add('open');
-    if (sidebar === elements.profileSidebar) {
-      const profileOverlay = document.getElementById('profileOverlay');
-      if (profileOverlay) {
-        profileOverlay.style.display = 'block';
-      }
-    }
-    document.body.style.overflow = 'hidden';
-  }
-}
-
-function closeSidebar(sidebar) {
-  if (sidebar) {
-    sidebar.classList.remove('open');
-    if (sidebar === elements.profileSidebar) {
-      const profileOverlay = document.getElementById('profileOverlay');
-      if (profileOverlay) {
-        profileOverlay.style.display = 'none';
-      }
-    }
-    document.body.style.overflow = '';
-  }
-}
-
-// Food modal controls
-function initializeFoodModal() {
-  const addToCartBtn = document.getElementById('addToCart');
-  const decreaseBtn = document.getElementById('decreaseQuantity');
-  const increaseBtn = document.getElementById('increaseQuantity');
-  const quantityInput = document.getElementById('foodQuantity');
-
-  if (addToCartBtn) {
-    addToCartBtn.addEventListener('click', () => {
-      if (currentItem) {
-        const quantity = parseInt(quantityInput.value);
-        addToCart({
-          id: currentItem.id,
-          name: currentItem.name,
-          price: currentItem.price,
-          quantity: quantity
-        });
-        showNotification('Товар добавлен в корзину!');
-        closeModal(elements.foodModal);
-      }
-    });
-  }
-
-  if (decreaseBtn) {
-    decreaseBtn.addEventListener('click', () => {
-      let value = parseInt(quantityInput.value);
-      if (value > 1) {
-        quantityInput.value = value - 1;
-      }
-    });
-  }
-
-  if (increaseBtn) {
-    increaseBtn.addEventListener('click', () => {
-      let value = parseInt(quantityInput.value);
-      quantityInput.value = value + 1;
-    });
-  }
-}
-
-function openFoodModal(cardData) {
-  currentItem = cardData;
-
-  const modalName = document.getElementById('modalName');
-  const modalImage = document.getElementById('modalImage');
-  const modalPrice = document.getElementById('modalPrice');
-  const modalDescription = document.getElementById('modalDescription');
-  const foodCalories = document.getElementById('foodCalories');
-  const foodQuantity = document.getElementById('foodQuantity');
-
-  if (modalName) modalName.textContent = cardData.name;
-  if (modalImage) modalImage.src = cardData.image;
-  if (modalPrice) modalPrice.textContent = cardData.price + ' ₽';
-  if (modalDescription) modalDescription.textContent = cardData.description;
-  if (foodCalories) foodCalories.textContent = 'Калории: 500 ккал';
-  if (foodQuantity) foodQuantity.value = 1;
-
-  openModal(elements.foodModal);
-}
-
-// Slideshow
-function initializeSlideshow() {
-  const slides = document.querySelectorAll('.hero-slide');
-  if (slides.length === 0) return;
-
-  setInterval(() => {
-    slides[slideIndex].classList.remove('active');
-    slideIndex = (slideIndex + 1) % slides.length;
-    slides[slideIndex].classList.add('active');
-  }, 4000);
-}
-
-// Notification system
-function showNotification(message, type = 'success') {
-  const notification = document.createElement('div');
-  notification.className = `notification notification-${type}`;
-  notification.textContent = message;
-
-  document.body.appendChild(notification);
-
-  setTimeout(() => {
-    notification.remove();
-  }, 3000);
-}
-
-// Make functions global for onclick handlers
-window.updateItemQuantity = updateItemQuantity;
-window.removeFromCart = removeFromCart;
+        <p><strong>Итого:</strong
