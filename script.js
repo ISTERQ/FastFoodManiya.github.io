@@ -153,35 +153,36 @@ async function handleLogin(e) {
   const email = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value;
 
-  if (!email || !password) {
-    showNotification('Пожалуйста, заполните все поля', 'error');
-    return;
-  }
-
   try {
-    const res = await fetch('https://fastfoodmaniya-github-io.onrender.com/login', {
+    const response = await fetch('https://fastfoodmania-api.onrender.com/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email, password }),
+      credentials: 'include'
     });
 
-    const data = await res.json();
+    const data = await response.json();
 
-    if (res.ok) {
+    if (response.ok) {
+      // Сохранение данных в localStorage
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('userId', data.userId);
-      localStorage.setItem('username', data.username);
+      localStorage.setItem('username', email);
+
       showNotification('Вход выполнен!');
       closeModal(elements.loginModal);
       updateLoginButtonToProfile();
     } else {
-      showNotification(`Ошибка входа: ${data.message}`, 'error');
+      showNotification('Ошибка входа: ' + (data.message || 'Неверные данные'), 'error');
     }
-  } catch (err) {
-    console.error('Login error:', err);
-    showNotification('Ошибка сети при попытке входа', 'error');
+  } catch (error) {
+    console.error('Login error:', error);
+
+    // В случае ошибки, показать сообщение
+    showNotification('Ошибка при подключении к серверу. Попробуйте позже.', 'error');
   }
 }
+
 
 // Handle registration with server
 async function handleRegistration(e) {
@@ -748,3 +749,55 @@ function showNotification(message, type = 'success') {
 window.updateItemQuantity = updateItemQuantity;
 window.removeFromCart = removeFromCart;
 window.repeatOrder = repeatOrder;
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  checkUserAuth();
+});
+
+function checkUserAuth() {
+  const userId = localStorage.getItem('userId');
+  
+  if (userId) {
+    // Если данные есть, обновляем интерфейс (например, кнопку входа)
+    updateLoginButtonToProfile();
+  } else {
+    // Если данных нет, пользователь не авторизован
+    console.log('Пользователь не авторизован');
+  }
+}
+
+function updateLoginButtonToProfile() {
+  const loginButton = document.getElementById('loginButton');
+  const username = localStorage.getItem('username');
+
+  if (loginButton) {
+    loginButton.innerHTML = `Профиль: ${username}`;
+    loginButton.id = 'profileButton';
+
+    // Сменить поведение кнопки: при клике открывать профиль
+    const newButton = loginButton.cloneNode(true);
+    loginButton.parentNode.replaceChild(newButton, loginButton);
+    
+    newButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      openProfileSidebar();
+    });
+  }
+}
+
+function openProfileSidebar() {
+  // Логика открытия боковой панели профиля
+  console.log('Открыт профиль');
+}
+async function handleLogout() {
+  // Удаление данных из localStorage
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('userId');
+  localStorage.removeItem('username');
+
+  showNotification('Выход выполнен');
+
+  // Обновляем интерфейс
+  updateLoginButtonToProfile();
+}
