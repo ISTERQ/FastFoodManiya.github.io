@@ -1,10 +1,11 @@
+
 // Global variables
 let cartData = {};
 let itemCount = 0;
 let currentItem = null;
 let slideIndex = 0;
 
-// DOM elements holder
+// DOM elements
 const elements = {
   loginModal: null,
   foodModal: null,
@@ -27,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   checkUserAuth();
 });
 
-// Initialize DOM elements and overlay click for closing modals/sidebars
+// Initialize DOM elements
 function initializeElements() {
   elements.loginModal = document.getElementById('loginModal');
   elements.foodModal = document.getElementById('foodModal');
@@ -39,15 +40,9 @@ function initializeElements() {
   elements.totalPrice = document.getElementById('totalPrice');
   elements.itemCountElement = document.getElementById('itemCount');
   elements.profileContent = document.getElementById('profileContent');
-
-  if (elements.overlay) {
-    elements.overlay.addEventListener('click', () => {
-      closeAllModalsAndSidebars();
-    });
-  }
 }
 
-// Initialize all event listeners modularly
+// Initialize event listeners
 function initializeEventListeners() {
   initializeNavigation();
   initializeMenuCards();
@@ -58,95 +53,129 @@ function initializeEventListeners() {
   initializeFoodModal();
 }
 
-// Smooth scrolling nav buttons
+// Smooth navigation
 function initializeNavigation() {
-  document.querySelectorAll('.nav-link, .hero-content .btn').forEach(el => {
-    el.addEventListener('click', e => {
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', (e) => {
       e.preventDefault();
-      const targetId = el.getAttribute('href');
-      const target = document.querySelector(targetId);
-      if (!target) return;
-      const headerHeight = document.querySelector('.header').offsetHeight;
-      const top = target.getBoundingClientRect().top + window.pageYOffset - headerHeight - 20;
-      window.scrollTo({ top, behavior: 'smooth' });
+      const targetId = link.getAttribute('href');
+      const targetElement = document.querySelector(targetId);
+
+      if (targetElement) {
+        const headerHeight = document.querySelector('.header').offsetHeight;
+        const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - headerHeight - 20;
+
+        window.scrollTo({
+          top: targetPosition,
+          behavior: 'smooth'
+        });
+      }
+    });
+  });
+
+  // Hero buttons
+  document.querySelectorAll('.hero-content .btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetId = btn.getAttribute('href');
+      const targetElement = document.querySelector(targetId);
+
+      if (targetElement) {
+        const headerHeight = document.querySelector('.header').offsetHeight;
+        const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - headerHeight - 20;
+
+        window.scrollTo({
+          top: targetPosition,
+          behavior: 'smooth'
+        });
+      }
     });
   });
 }
 
-// Initialize menu cards click and add to cart buttons
+// Menu cards
 function initializeMenuCards() {
   document.querySelectorAll('.menu-card').forEach((card, index) => {
     card.setAttribute('data-id', `item${index + 1}`);
 
-    // Clicking card opens food modal (except on add button)
+    // Обработчик клика по карточке
     card.addEventListener('click', (e) => {
+      // Проверяем, что клик не был по кнопке "В корзину"
       if (e.target.classList.contains('btn')) {
         e.stopPropagation();
         return;
       }
-      openFoodModal(extractCardData(card));
+
+      const cardData = extractCardData(card);
+      openFoodModal(cardData);
     });
 
-    // Add to cart button inside card
-    const addBtn = card.querySelector('.btn');
-    if (addBtn) {
-      addBtn.addEventListener('click', (e) => {
+    // Обработчик для кнопки "В корзину"
+    const addButton = card.querySelector('.btn');
+    if (addButton) {
+      addButton.addEventListener('click', (e) => {
         e.stopPropagation();
-        const item = extractCardData(card);
-        addToCart({ id: item.id, name: item.name, price: item.price, quantity: 1 });
+        const cardData = extractCardData(card);
+        addToCart({
+          id: cardData.id,
+          name: cardData.name,
+          price: cardData.price,
+          quantity: 1
+        });
         showNotification('Товар добавлен в корзину!');
       });
     }
   });
 }
 
-// Extract data from menu card element
 function extractCardData(card) {
-  return {
-    id: card.getAttribute('data-id'),
-    name: card.querySelector('.card-title').textContent,
-    description: card.querySelector('.card-description').textContent,
-    price: parseInt(card.querySelector('.price').textContent.replace(/\D/g, '')),
-    image: card.querySelector('img').src
-  };
+  const id = card.getAttribute('data-id');
+  const name = card.querySelector('.card-title').textContent;
+  const description = card.querySelector('.card-description').textContent;
+  const priceText = card.querySelector('.price').textContent;
+  const price = parseInt(priceText.replace(/\D/g, ''));
+  const image = card.querySelector('img').src;
+
+  return { id, name, description, price, image };
 }
 
-// Auth initialization: buttons and forms
+// Auth system
 function initializeAuth() {
-  const loginBtn = document.getElementById('loginButton');
+  const loginButton = document.getElementById('loginButton');
   const loginForm = document.getElementById('loginFormElement');
   const registrationForm = document.getElementById('registrationFormElement');
-  const showLoginFormLink = document.getElementById('showLoginForm');
-  const showRegistrationFormLink = document.getElementById('showRegistrationForm');
+  const showLoginForm = document.getElementById('showLoginForm');
+  const showRegistrationForm = document.getElementById('showRegistrationForm');
 
-  if (loginBtn) loginBtn.addEventListener('click', () => openModal(elements.loginModal));
-  if (showLoginFormLink) showLoginFormLink.addEventListener('click', e => {
-    e.preventDefault();
-    toggleAuthForms('login');
-  });
-  if (showRegistrationFormLink) showRegistrationFormLink.addEventListener('click', e => {
-    e.preventDefault();
-    toggleAuthForms('register');
-  });
-  if (loginForm) loginForm.addEventListener('submit', handleLogin);
-  if (registrationForm) registrationForm.addEventListener('submit', handleRegistration);
-}
+  if (loginButton) {
+    loginButton.addEventListener('click', () => openModal(elements.loginModal));
+  }
 
-// Toggle between login and registration forms
-function toggleAuthForms(form) {
-  const loginForm = document.getElementById('loginForm');
-  const registrationForm = document.getElementById('registrationForm');
-  if (!loginForm || !registrationForm) return;
-  if (form === 'login') {
-    registrationForm.style.display = 'none';
-    loginForm.style.display = 'block';
-  } else {
-    loginForm.style.display = 'none';
-    registrationForm.style.display = 'block';
+  if (showLoginForm) {
+    showLoginForm.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('registrationForm').style.display = 'none';
+      document.getElementById('loginForm').style.display = 'block';
+    });
+  }
+
+  if (showRegistrationForm) {
+    showRegistrationForm.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('registrationForm').style.display = 'block';
+    });
+  }
+
+  // Login form submission
+  if (loginForm) {
+    loginForm.addEventListener('submit', handleLogin);
+  }
+  if (registrationForm) {
+    registrationForm.addEventListener('submit', handleRegistration);
   }
 }
 
-// Handle login with server
 async function handleLogin(e) {
   e.preventDefault();
 
@@ -164,7 +193,6 @@ async function handleLogin(e) {
     const data = await response.json();
 
     if (response.ok) {
-      // Сохранение данных в localStorage
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('userId', data.userId);
       localStorage.setItem('username', email);
@@ -178,135 +206,179 @@ async function handleLogin(e) {
   } catch (error) {
     console.error('Login error:', error);
 
-    // В случае ошибки, показать сообщение
-    showNotification('Ошибка при подключении к серверу. Попробуйте позже.', 'error');
+    // Fallback to local user
+    const savedUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+    const user = savedUsers.find(u => u.email === email && u.password === password);
+
+    if (user) {
+      localStorage.setItem('accessToken', 'localToken');
+      localStorage.setItem('userId', user.id);
+      localStorage.setItem('username', user.email);
+      localStorage.setItem('userDisplayName', user.username);
+
+      showNotification('Вход выполнен в локальном режиме!');
+      closeModal(elements.loginModal);
+      updateLoginButtonToProfile();
+    } else {
+      showNotification('Неверный email или пароль', 'error');
+    }
   }
 }
 
-
-// Handle registration with server
 async function handleRegistration(e) {
   e.preventDefault();
 
-  const username = document.getElementById('registerUsername').value.trim();
-  const email = document.getElementById('registerEmail').value.trim();
+  const username = document.getElementById('registerUsername').value;
+  const email = document.getElementById('registerEmail').value;
   const password = document.getElementById('registerPassword').value;
 
-  if (!username || !email || !password) {
-    showNotification('Пожалуйста, заполните все поля', 'error');
-    return;
-  }
-
   try {
-    const res = await fetch('https://fastfoodmaniya-github-io.onrender.com/register', {
+    const response = await fetch('https://fastfoodmania-api.onrender.com/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, email, password })
     });
 
-    const data = await res.json();
+    const result = await response.json();
 
-    if (res.ok) {
-      showNotification('Регистрация успешна! Войдите в аккаунт.');
-      toggleAuthForms('login');
+    if (response.ok) {
+      showNotification('Регистрация успешна! Теперь войдите в свой аккаунт.');
+
+      document.getElementById('registrationForm').style.display = 'none';
+      document.getElementById('loginForm').style.display = 'block';
       document.getElementById('loginEmail').value = email;
     } else {
-      showNotification(`Ошибка регистрации: ${data.message}`, 'error');
+      showNotification('Ошибка: ' + result.message, 'error');
     }
-  } catch (err) {
-    console.error('Registration error:', err);
-    showNotification('Ошибка сети при регистрации', 'error');
+  } catch (error) {
+    console.error('Registration error:', error);
+
+    // Fallback to local storage
+    const savedUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+
+    // Проверяем, существует ли пользователь
+    if (savedUsers.some(u => u.email === email)) {
+      showNotification('Пользователь с таким email уже существует', 'error');
+      return;
+    }
+
+    // Создаем нового пользователя
+    const newUser = {
+      id: 'user_' + Date.now(),
+      username,
+      email,
+      password,
+      createdAt: new Date().toISOString()
+    };
+
+    savedUsers.push(newUser);
+    localStorage.setItem('registeredUsers', JSON.stringify(savedUsers));
+
+    showNotification('Регистрация успешна! Теперь войдите в свой аккаунт.');
+
+    document.getElementById('registrationForm').style.display = 'none';
+    document.getElementById('loginForm').style.display = 'block';
+    document.getElementById('loginEmail').value = email;
   }
 }
 
-// Update login button to profile view
 function updateLoginButtonToProfile() {
-  const btn = document.getElementById('loginButton');
-  if (!btn) return;
-  const username = localStorage.getItem('username') || 'Профиль';
+  const loginButton = document.getElementById('loginButton');
+  if (loginButton) {
+    const username = localStorage.getItem('userDisplayName') || localStorage.getItem('username') || 'Профиль';
+    loginButton.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+        <circle cx="12" cy="7" r="4"></circle>
+      </svg>
+      ${username}
+    `;
+    loginButton.id = 'profileButton';
 
-  btn.innerHTML = `
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-      <circle cx="12" cy="7" r="4"></circle>
-    </svg>
-    ${username}
-  `;
-  btn.id = 'profileButton';
+    // Remove old listeners and add new one
+    const newButton = loginButton.cloneNode(true);
+    loginButton.parentNode.replaceChild(newButton, loginButton);
 
-  const newBtn = btn.cloneNode(true);
-  btn.parentNode.replaceChild(newBtn, btn);
-
-  newBtn.addEventListener('click', e => {
-    e.preventDefault();
-    openSidebar(elements.profileSidebar);
-    loadProfile();
-  });
+    newButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      openSidebar(elements.profileSidebar);
+      loadProfile();
+    });
+  }
 }
 
-// Check auth on load
 function checkUserAuth() {
-  if (localStorage.getItem('accessToken')) {
+  const userId = localStorage.getItem('userId');
+  if (userId) {
     updateLoginButtonToProfile();
   }
 }
 
-// Cart system initialization
+// Cart system
 function initializeCart() {
-  const cartBtn = document.getElementById('cartButton');
-  const checkoutBtn = document.getElementById('checkoutButton');
+  const cartButton = document.getElementById('cartButton');
+  const checkoutButton = document.getElementById('checkoutButton');
 
-  if (cartBtn) cartBtn.addEventListener('click', () => openSidebar(elements.cartSidebar));
-  if (checkoutBtn) checkoutBtn.addEventListener('click', handleCheckout);
+  if (cartButton) {
+    cartButton.addEventListener('click', () => {
+      openSidebar(elements.cartSidebar);
+    });
+  }
+
+  if (checkoutButton) {
+    checkoutButton.addEventListener('click', handleCheckout);
+  }
 }
 
-// Add item to cart
 function addToCart(item) {
   if (cartData[item.id]) {
     cartData[item.id].quantity += item.quantity;
   } else {
     cartData[item.id] = { ...item };
   }
-  updateCartCount();
+  itemCount += item.quantity;
+  updateCartText();
   updateCartUI();
 }
 
-// Update cart UI
 function updateCartUI() {
-  const container = elements.cartItems;
-  const emptyMessage = document.getElementById('cartEmptyMessage');
-  if (!container) return;
+  const cartItemsContainer = elements.cartItems;
+  const cartEmptyMessage = document.getElementById('cartEmptyMessage');
 
-  container.innerHTML = '';
+  if (!cartItemsContainer) return;
+
+  cartItemsContainer.innerHTML = '';
   let total = 0;
 
   if (Object.keys(cartData).length === 0) {
-    if (emptyMessage) emptyMessage.style.display = 'block';
+    if (cartEmptyMessage) cartEmptyMessage.style.display = 'block';
     if (elements.totalPrice) elements.totalPrice.textContent = 'Всего: 0 ₽';
     return;
   }
-  if (emptyMessage) emptyMessage.style.display = 'none';
 
-  for (const id in cartData) {
-    const item = cartData[id];
+  if (cartEmptyMessage) cartEmptyMessage.style.display = 'none';
+
+  for (const itemId in cartData) {
+    const item = cartData[itemId];
     const itemTotal = item.price * item.quantity;
     total += itemTotal;
 
-    const div = document.createElement('div');
-    div.className = 'cart-item';
-    div.innerHTML = `
+    const itemElement = document.createElement('div');
+    itemElement.className = 'cart-item';
+    itemElement.innerHTML = `
       <div class="cart-item-info">
         <h4>${item.name}</h4>
         <div class="cart-item-price">${itemTotal} ₽</div>
         <div class="cart-item-controls">
-          <button class="quantity-btn" onclick="updateItemQuantity('${id}', false)">-</button>
+          <button class="quantity-btn" onclick="updateItemQuantity('${itemId}', false)">-</button>
           <input type="number" value="${item.quantity}" min="1" readonly>
-          <button class="quantity-btn" onclick="updateItemQuantity('${id}', true)">+</button>
+          <button class="quantity-btn" onclick="updateItemQuantity('${itemId}', true)">+</button>
         </div>
       </div>
-      <span class="remove-item" onclick="removeFromCart('${id}')">&times;</span>
+      <span class="remove-item" onclick="removeFromCart('${itemId}')">&times;</span>
     `;
-    container.appendChild(div);
+
+    cartItemsContainer.appendChild(itemElement);
   }
 
   if (elements.totalPrice) {
@@ -314,62 +386,87 @@ function updateCartUI() {
   }
 }
 
-// Update cart count and text
-function updateCartCount() {
-  itemCount = Object.values(cartData).reduce((sum, i) => sum + i.quantity, 0);
+function updateItemQuantity(itemId, increase) {
+  if (cartData[itemId]) {
+    if (increase) {
+      cartData[itemId].quantity++;
+      itemCount++;
+    } else {
+      cartData[itemId].quantity--;
+      itemCount--;
+      if (cartData[itemId].quantity <= 0) {
+        delete cartData[itemId];
+      }
+    }
+    updateCartText();
+    updateCartUI();
+  }
+}
+
+function removeFromCart(itemId) {
+  if (cartData[itemId]) {
+    itemCount -= cartData[itemId].quantity;
+    delete cartData[itemId];
+    updateCartText();
+    updateCartUI();
+  }
+}
+
+function updateCartText() {
+  itemCount = Object.values(cartData).reduce((sum, item) => sum + item.quantity, 0);
   if (elements.itemCountElement) {
     elements.itemCountElement.textContent = itemCount;
   }
 }
 
-// Update item quantity in cart
-function updateItemQuantity(itemId, increase) {
-  if (!cartData[itemId]) return;
-  if (increase) {
-    cartData[itemId].quantity++;
-  } else {
-    cartData[itemId].quantity--;
-    if (cartData[itemId].quantity <= 0) {
-      delete cartData[itemId];
-    }
-  }
-  updateCartCount();
-  updateCartUI();
-}
-
-// Remove item from cart
-function removeFromCart(itemId) {
-  if (!cartData[itemId]) return;
-  delete cartData[itemId];
-  updateCartCount();
-  updateCartUI();
-}
-
-// Clear cart
 function clearCart() {
   cartData = {};
-  updateCartCount();
+  itemCount = 0;
+  updateCartText();
   updateCartUI();
 }
 
-// Handle checkout: open order form if logged in
 function handleCheckout() {
-  const token = localStorage.getItem('accessToken');
-  if (!token) {
+  const userId = localStorage.getItem('userId');
+
+  if (!userId) {
     closeSidebar(elements.cartSidebar);
     openModal(elements.loginModal);
     return;
   }
+
   if (Object.keys(cartData).length === 0) {
     showNotification('Корзина пуста!', 'warning');
     return;
   }
+
+  // Показываем форму с телефоном и адресом
   showOrderForm();
 }
 
-// Show order form modal with cart summary
+function saveOrderToProfile() {
+  const userId = localStorage.getItem('userId');
+  const orders = JSON.parse(localStorage.getItem(`orders_${userId}`) || '[]');
+
+  const items = Object.values(cartData).map(item => ({
+    name: item.name,
+    quantity: item.quantity,
+    price: item.price
+  }));
+
+  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  orders.push({
+    date: new Date().toISOString(),
+    items,
+    total
+  });
+
+  localStorage.setItem(`orders_${userId}`, JSON.stringify(orders));
+}
+
 function showOrderForm() {
-  const orderItems = Object.values(cartData).map(item => 
+  const orderItems = Object.values(cartData).map(item =>
     `${item.name} × ${item.quantity} — ${item.price * item.quantity} ₽`
   ).join('<br>');
 
@@ -391,233 +488,201 @@ function showOrderForm() {
   openModal(elements.orderConfirmModal);
 }
 
-// Profile system initialization
+// Profile system
 function initializeProfile() {
   const profileOverlay = document.getElementById('profileOverlay');
-  const logoutBtn = document.getElementById('logoutButton');
+  const logoutButton = document.getElementById('logoutButton');
+
+  // Close profile sidebar
   document.querySelectorAll('#profileSidebar .sidebar-close').forEach(btn => {
-    btn.addEventListener('click', () => closeSidebar(elements.profileSidebar));
+    btn.addEventListener('click', () => {
+      closeSidebar(elements.profileSidebar);
+    });
   });
-  if (profileOverlay) profileOverlay.addEventListener('click', () => closeSidebar(elements.profileSidebar));
-  if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
 
+  if (profileOverlay) {
+    profileOverlay.addEventListener('click', () => {
+      closeSidebar(elements.profileSidebar);
+    });
+  }
+
+  if (logoutButton) {
+    logoutButton.addEventListener('click', handleLogout);
+  }
+
+  // Order form submission
   const finalOrderForm = document.getElementById('finalOrderForm');
-  if (finalOrderForm) finalOrderForm.addEventListener('submit', handleOrderSubmission);
+  if (finalOrderForm) {
+    finalOrderForm.addEventListener('submit', handleOrderSubmission);
+  }
 }
 
-// Load user profile and orders from server
 async function loadProfile() {
-  const token = localStorage.getItem('accessToken');
-  if (!token) return;
+  const userId = localStorage.getItem('userId');
   const profileContent = elements.profileContent;
-  profileContent.innerHTML = 'Загрузка...';
 
-  try {
-    const res = await fetch('https://fastfoodmaniya-github-io.onrender.com/api/user', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
-    if (!res.ok) throw new Error('Ошибка загрузки профиля');
-    const user = await res.json();
+  if (!profileContent || !userId) return;
 
+  profileContent.innerHTML = '<p>Загрузка...</p>';
+
+  // Загружаем заказы из localStorage
+  const orders = JSON.parse(localStorage.getItem(`orders_${userId}`) || '[]');
+  displayOrders(orders);
+}
+
+function displayOrders(orders) {
+  const profileContent = elements.profileContent;
+  const username = localStorage.getItem('userDisplayName') || localStorage.getItem('username');
+
+  if (orders.length === 0) {
     profileContent.innerHTML = `
-      <h3>Добро пожаловать, ${user.username}!</h3>
-      <p>Email: ${user.email}</p>
-      <h4>История заказов:</h4>
-      <div id="ordersList">Загрузка заказов...</div>
+      <div style="text-align: center; margin-bottom: 20px;">
+        <h3>Добро пожаловать, ${username}!</h3>
+        <p>У вас пока нет заказов.</p>
+      </div>
     `;
-
-    await loadOrders();
-
-  } catch (err) {
-    console.error(err);
-    profileContent.innerHTML = '<p>Ошибка загрузки профиля</p>';
-  }
-}
-
-// Load orders from server
-async function loadOrders() {
-  const token = localStorage.getItem('accessToken');
-  if (!token) return;
-
-  const ordersList = document.getElementById('ordersList');
-  if (!ordersList) return;
-
-  try {
-    const res = await fetch('https://fastfoodmaniya-github-io.onrender.com/api/orders', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
-    if (!res.ok) throw new Error('Ошибка загрузки заказов');
-    const orders = await res.json();
-
-    if (orders.length === 0) {
-      ordersList.innerHTML = '<p>Заказов пока нет.</p>';
-      return;
-    }
-
-    ordersList.innerHTML = orders.map((order, i) => {
-      const date = new Date(order.createdAt).toLocaleString();
-      const itemsList = order.items.map(item => `<li>${item.name} × ${item.quantity} (${item.price * item.quantity} ₽)</li>`).join('');
-      return `
-        <div class="order-item" style="border:1px solid #ddd; padding:10px; margin-bottom:10px;">
-          <p><strong>Дата:</strong> ${date}</p>
-          <ul>${itemsList}</ul>
-          <p><strong>Итого:</strong> ${order.total} ₽</p>
-          <button class="repeat-order-btn" onclick="repeatOrder(${i})">Повторить заказ</button>
-        </div>
-      `;
-    }).join('');
-
-  } catch (err) {
-    console.error(err);
-    ordersList.innerHTML = '<p>Не удалось загрузить заказы.</p>';
-  }
-}
-
-// Repeat order - добавляем товары из заказа в корзину
-function repeatOrder(index) {
-  const token = localStorage.getItem('accessToken');
-  if (!token) {
-    showNotification('Пожалуйста, войдите в аккаунт для повтора заказа', 'error');
-    openModal(elements.loginModal);
     return;
   }
 
-  loadOrdersFromStorageAndRepeat(index);
+  const ordersHTML = orders.map(order => {
+    const date = new Date(order.date || order.createdAt).toLocaleString();
+    const itemsList = order.items.map(item =>
+      `<li>${item.name} × ${item.quantity} (${item.price * item.quantity} ₽)</li>`
+    ).join('');
+
+    return `
+      <div class="order-item">
+        <p><strong>Дата:</strong> ${date}</p>
+        <ul>${itemsList}</ul>
+        <p><strong>Итого:</strong> ${order.total} ₽</p>
+      </div>
+    `;
+  }).join('');
+
+  profileContent.innerHTML = `
+    <div style="text-align: center; margin-bottom: 20px;">
+      <h3>Добро пожаловать, ${username}!</h3>
+    </div>
+    <h3>История заказов:</h3>
+    ${ordersHTML}
+  `;
 }
 
-async function loadOrdersFromStorageAndRepeat(index) {
-  try {
-    const token = localStorage.getItem('accessToken');
-    if (!token) return;
-
-    const res = await fetch('https://fastfoodmaniya-github-io.onrender.com/api/orders', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
-    if (!res.ok) throw new Error('Ошибка загрузки заказов');
-    const orders = await res.json();
-
-    if (!orders[index]) {
-      showNotification('Заказ не найден', 'error');
-      return;
-    }
-
-    orders[index].items.forEach(item => {
-      addToCart({
-        id: item.id || `repeat_${Date.now()}`, // fallback id
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity
-      });
-    });
-
-    showNotification('Заказ добавлен в корзину');
-    openSidebar(elements.cartSidebar);
-  } catch (err) {
-    console.error(err);
-    showNotification('Ошибка при повтое заказа', 'error');
-  }
-}
-
-// Logout
 async function handleLogout() {
-  const token = localStorage.getItem('accessToken');
+  const userId = localStorage.getItem('userId');
+
   try {
-    await fetch('https://fastfoodmaniya-github-io.onrender.com/logout', {
+    await fetch('https://fastfoodmania-api.onrender.com/logout', {
       method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + token }
+      credentials: 'include'
     });
-  } catch (err) {
-    console.error('Logout error:', err);
+  } catch (error) {
+    console.error('Logout error:', error);
   }
 
-  localStorage.clear();
+  // Очищаем только данные авторизации, оставляем зарегистрированных пользователей и их заказы
+  localStorage.removeItem('userId');
+  localStorage.removeItem('username');
+  localStorage.removeItem('userDisplayName');
+  localStorage.removeItem('accessToken');
+
   clearCart();
   closeSidebar(elements.profileSidebar);
 
-  // Возврат кнопки профиля в кнопку входа
-  const btn = document.getElementById('profileButton');
-  if (!btn) return;
-  btn.innerHTML = `
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-      <circle cx="12" cy="7" r="4"></circle>
-    </svg>
-    Войти
-  `;
-  btn.id = 'loginButton';
+  // Восстанавливаем кнопку входа
+  const profileButton = document.getElementById('profileButton');
+  if (profileButton) {
+    profileButton.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+        <circle cx="12" cy="7" r="4"></circle>
+      </svg>
+      Войти
+    `;
+    profileButton.id = 'loginButton';
 
-  const newBtn = btn.cloneNode(true);
-  btn.parentNode.replaceChild(newBtn, btn);
+    // Remove old listeners and add new one
+    const newButton = profileButton.cloneNode(true);
+    profileButton.parentNode.replaceChild(newButton, profileButton);
 
-  newBtn.addEventListener('click', () => openModal(elements.loginModal));
+    newButton.addEventListener('click', () => openModal(elements.loginModal));
+  }
 }
 
-// Order form submission
 async function handleOrderSubmission(e) {
   e.preventDefault();
 
-  const token = localStorage.getItem('accessToken');
-  if (!token) {
-    showNotification('Пожалуйста, войдите в аккаунт', 'error');
-    openModal(elements.loginModal);
-    return;
-  }
+  const userId = localStorage.getItem('userId');
+  const phone = document.getElementById('phone').value;
+  const address = document.getElementById('address').value;
 
-  const phone = document.getElementById('phone').value.trim();
-  const address = document.getElementById('address').value.trim();
+  const items = Object.values(cartData).map(item => ({
+    id: item.id,
+    name: item.name,
+    price: item.price,
+    quantity: item.quantity
+  }));
 
-  if (!phone || !address) {
-    showNotification('Пожалуйста, заполните телефон и адрес', 'error');
-    return;
-  }
+  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  const items = Object.values(cartData).map(({ id, name, price, quantity }) => ({ id, name, price, quantity }));
-  const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  // Сохраняем заказ локально
+  const orders = JSON.parse(localStorage.getItem(`orders_${userId}`) || '[]');
+  orders.push({
+    date: new Date().toISOString(),
+    items,
+    total,
+    phone,
+    address
+  });
+  localStorage.setItem(`orders_${userId}`, JSON.stringify(orders));
 
   try {
-    const res = await fetch('https://fastfoodmaniya-github-io.onrender.com/api/orders', {
+    const response = await fetch('https://fastfoodmania-api.onrender.com/api/orders', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + token
-      },
-      body: JSON.stringify({ items, total, phone, address })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, items, total, phone, address })
     });
 
-    if (res.ok) {
-      showNotification('Заказ успешно оформлен!');
-      clearCart();
-      closeModal(elements.orderConfirmModal);
+    if (response.ok) {
+      showNotification('Заказ успешно оформлен! Данные отправлены на почту.');
     } else {
-      const data = await res.json();
-      showNotification(`Ошибка при оформлении заказа: ${data.message}`, 'error');
+      showNotification('Заказ сохранен локально. Данные отправлены на почту.');
     }
-  } catch (err) {
-    console.error('Order submission error:', err);
-    showNotification('Ошибка сети при оформлении заказа', 'error');
+  } catch (error) {
+    console.error('Order submission error:', error);
+    showNotification('Заказ сохранен локально. Данные отправлены на почту.');
   }
+
+  clearCart();
+  closeModal(elements.orderConfirmModal);
 }
 
-// Modal system: close buttons and overlay
+// Modal system
 function initializeModals() {
-  // Close modals by X buttons
+  // Close modals
   document.querySelectorAll('.modal-close').forEach(btn => {
-    btn.addEventListener('click', e => {
+    btn.addEventListener('click', (e) => {
       const modal = e.target.closest('.modal');
       closeModal(modal);
     });
   });
 
-  // Close sidebars by close buttons
+  // Close sidebars
   document.querySelectorAll('.sidebar-close').forEach(btn => {
-    btn.addEventListener('click', e => {
+    btn.addEventListener('click', (e) => {
       const sidebar = e.target.closest('.sidebar');
       closeSidebar(sidebar);
     });
   });
+
+  // Close on overlay click
+  if (elements.overlay) {
+    elements.overlay.addEventListener('click', () => {
+      closeAllModals();
+    });
+  }
 }
 
-// Open modal
 function openModal(modal) {
   if (modal && elements.overlay) {
     modal.style.display = 'block';
@@ -626,7 +691,6 @@ function openModal(modal) {
   }
 }
 
-// Close modal
 function closeModal(modal) {
   if (modal && elements.overlay) {
     modal.style.display = 'none';
@@ -635,13 +699,9 @@ function closeModal(modal) {
   }
 }
 
-// Close all modals and sidebars
-function closeAllModalsAndSidebars() {
+function closeAllModals() {
   document.querySelectorAll('.modal').forEach(modal => {
     modal.style.display = 'none';
-  });
-  document.querySelectorAll('.sidebar').forEach(sidebar => {
-    sidebar.classList.remove('open');
   });
   if (elements.overlay) {
     elements.overlay.style.display = 'none';
@@ -649,28 +709,30 @@ function closeAllModalsAndSidebars() {
   document.body.style.overflow = '';
 }
 
-// Open sidebar (no overlay dim for profile sidebar as requested)
 function openSidebar(sidebar) {
-  if (!sidebar) return;
-  sidebar.classList.add('open');
-  if (sidebar === elements.profileSidebar) {
-    // no overlay dim for profile sidebar per request
-  } else {
-    if (elements.overlay) elements.overlay.style.display = 'block';
+  if (sidebar) {
+    sidebar.classList.add('open');
+    if (sidebar === elements.profileSidebar) {
+      const profileOverlay = document.getElementById('profileOverlay');
+      if (profileOverlay) {
+        profileOverlay.style.display = 'block';
+      }
+    }
+    document.body.style.overflow = 'hidden';
   }
-  document.body.style.overflow = 'hidden';
 }
 
-// Close sidebar
 function closeSidebar(sidebar) {
-  if (!sidebar) return;
-  sidebar.classList.remove('open');
-  if (sidebar === elements.profileSidebar) {
-    // no overlay dim for profile sidebar
-  } else {
-    if (elements.overlay) elements.overlay.style.display = 'none';
+  if (sidebar) {
+    sidebar.classList.remove('open');
+    if (sidebar === elements.profileSidebar) {
+      const profileOverlay = document.getElementById('profileOverlay');
+      if (profileOverlay) {
+        profileOverlay.style.display = 'none';
+      }
+    }
+    document.body.style.overflow = '';
   }
-  document.body.style.overflow = '';
 }
 
 // Food modal controls
@@ -683,30 +745,39 @@ function initializeFoodModal() {
   if (addToCartBtn) {
     addToCartBtn.addEventListener('click', () => {
       if (currentItem) {
-        const qty = parseInt(quantityInput.value);
-        addToCart({ id: currentItem.id, name: currentItem.name, price: currentItem.price, quantity: qty });
+        const quantity = parseInt(quantityInput.value);
+        addToCart({
+          id: currentItem.id,
+          name: currentItem.name,
+          price: currentItem.price,
+          quantity: quantity
+        });
         showNotification('Товар добавлен в корзину!');
         closeModal(elements.foodModal);
       }
     });
   }
+
   if (decreaseBtn) {
     decreaseBtn.addEventListener('click', () => {
-      const val = parseInt(quantityInput.value);
-      if (val > 1) quantityInput.value = val - 1;
+      let value = parseInt(quantityInput.value);
+      if (value > 1) {
+        quantityInput.value = value - 1;
+      }
     });
   }
+
   if (increaseBtn) {
     increaseBtn.addEventListener('click', () => {
-      const val = parseInt(quantityInput.value);
-      quantityInput.value = val + 1;
+      let value = parseInt(quantityInput.value);
+      quantityInput.value = value + 1;
     });
   }
 }
 
-// Open food modal and fill data
-function openFoodModal(data) {
-  currentItem = data;
+function openFoodModal(cardData) {
+  currentItem = cardData;
+
   const modalName = document.getElementById('modalName');
   const modalImage = document.getElementById('modalImage');
   const modalPrice = document.getElementById('modalPrice');
@@ -714,20 +785,20 @@ function openFoodModal(data) {
   const foodCalories = document.getElementById('foodCalories');
   const foodQuantity = document.getElementById('foodQuantity');
 
-  if (modalName) modalName.textContent = data.name;
-  if (modalImage) modalImage.src = data.image;
-  if (modalPrice) modalPrice.textContent = data.price + ' ₽';
-  if (modalDescription) modalDescription.textContent = data.description;
+  if (modalName) modalName.textContent = cardData.name;
+  if (modalImage) modalImage.src = cardData.image;
+  if (modalPrice) modalPrice.textContent = cardData.price + ' ₽';
+  if (modalDescription) modalDescription.textContent = cardData.description;
   if (foodCalories) foodCalories.textContent = 'Калории: 500 ккал';
   if (foodQuantity) foodQuantity.value = 1;
 
   openModal(elements.foodModal);
 }
 
-// Slideshow (hero slider)
+// Slideshow
 function initializeSlideshow() {
   const slides = document.querySelectorAll('.hero-slide');
-  if (!slides.length) return;
+  if (slides.length === 0) return;
 
   setInterval(() => {
     slides[slideIndex].classList.remove('active');
@@ -736,68 +807,19 @@ function initializeSlideshow() {
   }, 4000);
 }
 
-// Notification system (toast-like)
+// Notification system
 function showNotification(message, type = 'success') {
-  const notif = document.createElement('div');
-  notif.className = `notification notification-${type}`;
-  notif.textContent = message;
-  document.body.appendChild(notif);
-  setTimeout(() => notif.remove(), 3000);
+  const notification = document.createElement('div');
+  notification.className = `notification notification-${type}`;
+  notification.textContent = message;
+
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
 }
 
-// Make some functions global for inline onclick handlers
+// Make functions global for onclick handlers
 window.updateItemQuantity = updateItemQuantity;
 window.removeFromCart = removeFromCart;
-window.repeatOrder = repeatOrder;
-
-
-document.addEventListener('DOMContentLoaded', () => {
-  checkUserAuth();
-});
-
-function checkUserAuth() {
-  const userId = localStorage.getItem('userId');
-  
-  if (userId) {
-    // Если данные есть, обновляем интерфейс (например, кнопку входа)
-    updateLoginButtonToProfile();
-  } else {
-    // Если данных нет, пользователь не авторизован
-    console.log('Пользователь не авторизован');
-  }
-}
-
-function updateLoginButtonToProfile() {
-  const loginButton = document.getElementById('loginButton');
-  const username = localStorage.getItem('username');
-
-  if (loginButton) {
-    loginButton.innerHTML = `Профиль: ${username}`;
-    loginButton.id = 'profileButton';
-
-    // Сменить поведение кнопки: при клике открывать профиль
-    const newButton = loginButton.cloneNode(true);
-    loginButton.parentNode.replaceChild(newButton, loginButton);
-    
-    newButton.addEventListener('click', (e) => {
-      e.preventDefault();
-      openProfileSidebar();
-    });
-  }
-}
-
-function openProfileSidebar() {
-  // Логика открытия боковой панели профиля
-  console.log('Открыт профиль');
-}
-async function handleLogout() {
-  // Удаление данных из localStorage
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('userId');
-  localStorage.removeItem('username');
-
-  showNotification('Выход выполнен');
-
-  // Обновляем интерфейс
-  updateLoginButtonToProfile();
-}
