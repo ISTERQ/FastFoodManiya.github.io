@@ -103,62 +103,6 @@
         </div>
     </section>
 
-<!-- Страница для запроса сброса пароля -->
-<form id="passwordResetForm">
-  <label for="email">Введите ваш email:</label>
-  <input type="email" id="email" required>
-  <button type="submit">Отправить ссылку для сброса пароля</button>
-</form>
-
-<!-- Страница для сброса пароля -->
-<form id="resetPasswordForm" style="display:none;">
-  <label for="newPassword">Новый пароль:</label>
-  <input type="password" id="newPassword" required>
-  <button type="submit">Обновить пароль</button>
-</form>
-
-<script>
-  // Обработчик запроса на сброс пароля
-  document.getElementById('passwordResetForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('email').value;
-    
-    try {
-      const res = await fetch('/request-password-reset', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email })
-      });
-      const data = await res.json();
-      alert(data.message);
-    } catch (err) {
-      alert('Произошла ошибка');
-    }
-  });
-
-  // Обработчик сброса пароля
-  document.getElementById('resetPasswordForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const newPassword = document.getElementById('newPassword').value;
-    const token = new URLSearchParams(window.location.search).get('token');
-
-    try {
-      const res = await fetch('/reset-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ token, newPassword })
-      });
-      const data = await res.json();
-      alert(data.message);
-    } catch (err) {
-      alert('Произошла ошибка');
-    }
-  });
-</script>
 
     
     <!-- Menu -->
