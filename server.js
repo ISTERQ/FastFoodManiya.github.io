@@ -176,3 +176,43 @@ app.use(express.static('.'));
 app.use('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
+
+
+
+
+// API для запроса сброса пароля (отправка ссылки на почту)
+app.post('/request-password-reset', (req, res) => {
+  const { email } = req.body;
+
+  // Находим пользователя по email
+  const user = users.find(u => u.email === email);
+  if (!user) {
+    return res.status(404).json({ message: 'Пользователь не найден' });
+  }
+
+  // Генерация токена для сброса пароля (можно использовать JWT или случайный токен)
+  const resetToken = 'reset_' + Date.now(); // Это пример, в реальной жизни лучше использовать безопасный токен
+
+  // Здесь можно отправить email с ссылкой на сброс пароля
+  // Пример ссылки: `http://localhost:5000/reset-password?token=${resetToken}`
+  console.log(`Ссылка на сброс пароля для ${email}: http://localhost:5000/reset-password?token=${resetToken}`);
+
+  res.json({ message: 'Ссылка для сброса пароля отправлена на ваш email' });
+});
+
+// API для сброса пароля по токену
+app.post('/reset-password', (req, res) => {
+  const { token, newPassword } = req.body;
+
+  // Находим пользователя по токену (в реальной жизни это будет проверка токена)
+  const user = users.find(u => u.id === token); // Например, токен - это id пользователя
+
+  if (!user) {
+    return res.status(400).json({ message: 'Неверный токен' });
+  }
+
+  // Обновляем пароль пользователя
+  user.password = newPassword;
+
+  res.json({ message: 'Пароль успешно обновлен' });
+});
