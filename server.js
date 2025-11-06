@@ -7,7 +7,7 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = 'mongodb://sosaldbmoy_memberdeal:cf007c3511b5f6c64e2451ee67bfd0b4804acb52@fyghg.h.filess.io:61004/sosaldbmoy_memberdeal';
+const MONGO_URI = 'mongodb://sosaldbmoy_wagonpull:eb99d5312a00f870ddd23be70d46da9f165548c6@d54-qq.h.filess.io:27018/sosaldbmoy_wagonpull';
 const JWT_SECRET = 'b3f59c77c06c2d4b6c0d81514f4e4fd7dc17d0f143e8f0bddc4f9306edb969e6';
 
 // Middleware
@@ -176,6 +176,7 @@ app.use(express.static('.'));
 app.use('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
+
 
 
 
