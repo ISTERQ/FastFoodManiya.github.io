@@ -6,13 +6,13 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
-const MONGO_URI = 'mongodb://sosaldbmoy_wagonpull:eb99d5312a00f870ddd23be70d46da9f165548c6@d54-qq.h.filess.io:27018/sosaldbmoy_wagonpull';
+import { put } from "@vercel/blob";
+const { url } = await put('articles/blob.txt', 'Hello World!', { access: 'private' });
 const JWT_SECRET = 'b3f59c77c06c2d4b6c0d81514f4e4fd7dc17d0f143e8f0bddc4f9306edb969e6';
 
 // Middleware
 app.use(cors({
-  origin: 'https://fastfoodmaniya-github-io.onrender.com',
+  origin: 'fast-food-maniya-github-io.vercel.app',
   credentials: true
 }));
 app.use(express.json());
