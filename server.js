@@ -11,6 +11,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+const PORT = process.env.PORT || 5000;
+const MONGO_URI = 'mongodb://sosaldbmoy_wagonpull:eb99d5312a00f870ddd23be70d46da9f165548c6@d54-qq.h.filess.io:27018/sosaldbmoy_wagonpull';
 const JWT_SECRET = 'b3f59c77c06c2d4b6c0d81514f4e4fd7dc17d0f143e8f0bddc4f9306edb969e6';
 
 // Ссылка на базу данных берется из безопасных переменных окружения Vercel
