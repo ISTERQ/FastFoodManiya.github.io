@@ -181,6 +181,8 @@ app.use('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// В самом конце server.js
+export default app;
 
 
 
