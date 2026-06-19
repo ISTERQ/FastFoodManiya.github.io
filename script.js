@@ -159,7 +159,7 @@ async function handleLogin(e) {
   }
 
   try {
-    const res = await fetch('https://fast-food-maniya-github-io-git-main-isterqs-projects.vercel.app/login', {
+    const res = await fetch('/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
@@ -197,7 +197,7 @@ async function handleRegistration(e) {
   }
 
   try {
-    const res = await fetch('https://fast-food-maniya-github-io-git-main-isterqs-projects.vercel.app/register', {
+    const res = await fetch('/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, email, password })
@@ -412,7 +412,7 @@ async function loadProfile() {
   profileContent.innerHTML = 'Загрузка...';
 
   try {
-    const res = await fetch('https://fast-food-maniya-github-io-git-main-isterqs-projects.vercel.app/api/user', {
+    const res = await fetch('/api/user', {
       headers: { 'Authorization': 'Bearer ' + token }
     });
     if (!res.ok) throw new Error('Ошибка загрузки профиля');
@@ -442,7 +442,7 @@ async function loadOrders() {
   if (!ordersList) return;
 
   try {
-    const res = await fetch('https://fast-food-maniya-github-io-git-main-isterqs-projects.vercel.app/api/orders', {
+    const res = await fetch('/api/orders', {
       headers: { 'Authorization': 'Bearer ' + token }
     });
     if (!res.ok) throw new Error('Ошибка загрузки заказов');
@@ -489,7 +489,7 @@ async function loadOrdersFromStorageAndRepeat(index) {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
 
-    const res = await fetch('https://fast-food-maniya-github-io-git-main-isterqs-projects.vercel.app/api/orders', {
+    const res = await fetch('/api/orders', {
       headers: { 'Authorization': 'Bearer ' + token }
     });
     if (!res.ok) throw new Error('Ошибка загрузки заказов');
@@ -521,7 +521,7 @@ async function loadOrdersFromStorageAndRepeat(index) {
 async function handleLogout() {
   const token = localStorage.getItem('accessToken');
   try {
-    await fetch('https://fast-food-maniya-github-io-git-main-isterqs-projects.vercel.app/logout', {
+    await fetch('/logout', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + token }
     });
@@ -574,7 +574,7 @@ async function handleOrderSubmission(e) {
   const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   try {
-    const res = await fetch('https://fast-food-maniya-github-io-git-main-isterqs-projects.vercel.app/api/orders', {
+    const res = await fetch('/api/orders', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
