@@ -9,6 +9,10 @@ const app = express();
 import { put } from "@vercel/blob";
 const { url } = await put('articles/blob.txt', 'Hello World!', { access: 'private' });
 const JWT_SECRET = 'b3f59c77c06c2d4b6c0d81514f4e4fd7dc17d0f143e8f0bddc4f9306edb969e6';
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
 
 // Middleware
 app.use(cors({
