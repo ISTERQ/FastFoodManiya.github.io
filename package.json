@@ -17,9 +17,6 @@
     "jsonwebtoken": "^9.0.0",
     "@vercel/blob": "^0.23.4"
   },
-  "engines": {
-    "node": ">=20.0.0"
-  },
   "keywords": [
     "fastfood",
     "delivery",
