@@ -1,6 +1,7 @@
 {
   "name": "fastfoodmania",
   "version": "1.0.0",
+  "type": "module",
   "description": "FastFoodMania - сайт доставки быстрого питания",
   "main": "server.js",
   "scripts": {
